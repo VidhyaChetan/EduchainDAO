@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EduChain DAO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
+    <style>
+        body { background:#0f172a; color:white; }
+        .card { background:#1e293b; border-radius:15px; }
+    </style>
+</head>
+
+<body>
+<div class="container mt-4">
+
+<h2 class="text-center mb-4">🎓 EduChain DAO</h2>
+
+<div class="card p-3 mb-3 text-center">
+    <button class="btn btn-primary" onclick="connect()">Connect Wallet</button>
+    <p id="account"></p>
+</div>
+
+<div class="card p-3 mb-3">
+    <h5>Apply</h5>
+    <input id="ipfs" class="form-control mb-2" placeholder="Enter IPFS hash">
+    <button class="btn btn-warning w-100" onclick="apply()">Apply</button>
+</div>
+
+<div class="card p-3 mb-3">
+    <h5>Vote / Finalize</h5>
+    <input id="id" class="form-control mb-2" placeholder="Application ID">
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-success w-100" onclick="vote(true)">Approve</button>
+        <button class="btn btn-danger w-100" onclick="vote(false)">Reject</button>
+    </div>
+
+    <button class="btn btn-dark w-100 mt-2" onclick="finalize()">Finalize</button>
+</div>
+
+<div class="card p-3">
+    <h5>Applications</h5>
+    <table class="table table-dark">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Votes</th>
+                <th>IPFS</th>
+            </tr>
+        </thead>
+        <tbody id="data"></tbody>
+    </table>
+</div>
+
+</div>
+
+<script>
+let provider, signer, contract;
+
+const address = "0x5a48403060c589c8824237035c7af54cDb41C922";
+
+const abi = [
+"function applyForScholarship(string)",
+"function vote(uint,bool)",
+"function finalizeApplication(uint)",
+"function applicationCount() view returns(uint)",
+"function getApplication(uint) view returns(uint,address,string,uint,uint,bool,bool)"
+];
+
+// CONNECT
+async function connect(){
+    provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:7545");
+
+    const pk = prompt("Enter private key");
+    signer = new ethers.Wallet(pk, provider);
+
+    contract = new ethers.Contract(address, abi, signer);
+
+    document.getElementById("account").innerText = signer.address;
+
+    load();
+}
+
+// APPLY
+async function apply(){
+    const hash = document.getElementById("ipfs").value;
+
+    if(!hash) return alert("Enter IPFS");
+
+    const tx = await contract.applyForScholarship(hash);
+    await tx.wait();
+
+    alert("Applied!");
+    load();
+}
+
+// VOTE
+async function vote(val){
+    const id = document.getElementById("id").value;
+
+    const tx = await contract.vote(id, val);
+    await tx.wait();
+
+    load();
+}
+
+// FINALIZE
+async function finalize(){
+    const id = document.getElementById("id").value;
+
+    const tx = await contract.finalizeApplication(id);
+    await tx.wait();
+
+    alert("Finalized!");
+    load();
+}
+
+// LOAD
+async function load(){
+    const count = await contract.applicationCount();
+
+    let html = "";
+
+    for(let i=1;i<=count;i++){
+        const a = await contract.getApplication(i);
+
+        let status = "Pending";
+        if(a[5]){
+            status = a[6] ? "Approved" : "Rejected";
+        }
+
+        html += `
+        <tr>
+            <td>${a[0]}</td>
+            <td>${status}</td>
+            <td>${a[3]}/${a[4]}</td>
+            <td><a href="https://gateway.pinata.cloud/ipfs/${a[2]}" target="_blank">View</a></td>
+        </tr>`;
+    }
+
+    document.getElementById("data").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
