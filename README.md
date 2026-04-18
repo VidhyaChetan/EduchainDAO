@@ -173,3 +173,7 @@ const address = "YOUR_CONTRACT_ADDRESS";
 ## 🎉 Conclusion
 
 EduChainDAO demonstrates how blockchain and DAO principles can be applied to real-world problems like scholarship distribution, ensuring fairness, transparency, and trust in decision-making.
+
+
+Note: This project currently uses Ganache (local blockchain) for development and testing. 
+It can be extended to MetaMask and public testnets like Sepolia.
